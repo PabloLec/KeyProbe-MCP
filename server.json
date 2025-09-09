@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "KeyProbe": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "keyprobe.server"]
+    }
+  }
+}
