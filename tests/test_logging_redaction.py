@@ -4,7 +4,7 @@ from keyprobe.logging_conf import setup_logging
 from keyprobe.settings import Settings
 
 def test_redaction_in_logs(caplog):
-    s = Settings(LOG_LEVEL="DEBUG", RESOURCE_TTL_SEC=300, ALLOWLIST_DIRS=["."])
+    s = Settings(LOG_LEVEL="DEBUG", RESOURCE_TTL_SEC=300)
     setup_logging(s, json_mode=False)
 
     logger = logging.getLogger("keyprobe.test")

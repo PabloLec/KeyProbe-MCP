@@ -1,16 +1,19 @@
 # keyprobe/server.py
 from __future__ import annotations
 
+import hashlib
+
 from fastmcp import FastMCP
 from typing import Optional
 import os
 import json
 import pathlib
 
+from keyprobe.format_identify import guess_format
 from .settings import Settings
 from .logging_conf import setup_logging
 from .resource_store import ResourceStore
-from .path_utils import validate_and_resolve
+from .path_utils import resolve_path
 
 mcp = FastMCP(name="KeyProbe")
 
@@ -58,8 +61,7 @@ def fs_stat(path: str) -> dict:
     Retourne des métadonnées sur un chemin local (dans l'allowlist) :
     - chemin résolu, exists, is_file, is_dir, size (si fichier)
     """
-    s = _get_settings()
-    resolved = validate_and_resolve(path, s.ALLOWLIST_DIRS)
+    resolved = resolve_path(path)
 
     info = {
         "input": path,
@@ -72,6 +74,27 @@ def fs_stat(path: str) -> dict:
     if info["exists"] and info["is_file"]:
         info["size"] = resolved.stat().st_size
     return info
+
+
+@mcp.tool
+def file_metadata(path: str) -> dict:
+    """
+    Lit un fichier (sandboxée par allowlist), calcule taille + SHA-256 et
+    renvoie un résumé minimal : { path, format, size, digest_sha256 }.
+    """
+    resolved = resolve_path(path)
+
+    # Lecture safe (petits fichiers dans nos tests)
+    data = resolved.read_bytes()
+    digest = hashlib.sha256(data).hexdigest()
+    fmt = guess_format(data, filename=str(resolved))
+
+    return {
+        "path": str(resolved),
+        "format": fmt,
+        "size": resolved.stat().st_size,
+        "digest_sha256": digest,
+    }
 
 # -- Smoke tool (déjà présent) ------------------------------------------------------
 @mcp.tool
