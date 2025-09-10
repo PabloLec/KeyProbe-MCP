@@ -1,4 +1,13 @@
 {
   "format": "OPENSSH",
-  "private": { "encrypted": true }
+  "private": {
+    "cipher": "aes256-ctr",
+    "encrypted": true,
+    "kdf": "bcrypt",
+    "kdf_opts": {
+      "salt_b64": "KDZ0vFsF0F0xLIpIxp8dqw==",
+      "rounds": 24
+    },
+    "public_fingerprint_sha256": "SHA256:pBxEQwMFcx1aM6ezAShIhCuczQmIf4Zi3YAupRIHQ5Y"
+  }
 }

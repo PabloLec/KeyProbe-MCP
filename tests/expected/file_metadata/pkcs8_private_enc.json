@@ -1,4 +1,28 @@
 {
+  "encrypted": true,
+  "encryption": {
+    "algorithm_oid": "1.2.840.113549.1.5.13",
+    "kdf": {
+      "oid": "1.2.840.113549.1.5.12",
+      "name": "pbkdf2",
+      "iterations": 2048,
+      "salt_b64": "VWXOytY6a0I=",
+      "prf": "hmacWithSHA256",
+      "prf_oid": "1.2.840.113549.2.9"
+    },
+    "cipher": {
+      "name": "aes-256-cbc",
+      "oid": "2.16.840.1.101.3.4.1.42",
+      "iv_b64": "BBC0hrTMFGEDmXiBzfidKHZm"
+    },
+    "algorithm": "pbes2"
+  },
   "format": "PKCS8",
-  "encrypted": true
+  "warnings": [
+    {
+      "code": "PKCS8_PBKDF2_LOW_ITER",
+      "message": "PBKDF2 iterations=2048 look low",
+      "severity": "warn"
+    }
+  ]
 }

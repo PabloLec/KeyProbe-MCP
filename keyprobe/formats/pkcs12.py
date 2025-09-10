@@ -1,64 +1,64 @@
-from __future__ import annotations
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import hashlib
 
 from cryptography.hazmat.primitives.serialization.pkcs12 import load_key_and_certificates
-from keyprobe.crypto_utils import x509_cert_to_meta
+
+from ..x509meta import cert_to_meta, cert_warnings
 
 
-def _sha256_hex(b: bytes) -> str:
+def _sha256(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
 
-def summarize(data: bytes) -> Dict[str, Any]:
-    out: Dict[str, Any] = {
-        "format": "PKCS12",
-        "size": len(data),
-        "digest_sha256": _sha256_hex(data),
-    }
-    try:
-        key, cert, chain = load_key_and_certificates(data, password=None)
-    except Exception:
-        out["encrypted"] = True
-        return out
+def _load(data: bytes, password: Optional[str]):
+    pwd = None if password is None else password.encode("utf-8")
+    return load_key_and_certificates(data, password=pwd)
 
-    out["encrypted"] = False
-    out["has_key"] = key is not None
 
-    certs: List[Dict[str, Any]] = []
+def _cert_metas(cert, chain) -> List[Dict[str, Any]]:
+    metas: List[Dict[str, Any]] = []
     if cert is not None:
-        certs.append(x509_cert_to_meta(cert))
+        metas.append(cert_to_meta(cert))
     if chain:
-        certs.extend(x509_cert_to_meta(c) for c in chain)
+        metas.extend(cert_to_meta(c) for c in chain)
+    return metas
 
-    if len(certs) == 1:
-        out["x509"] = certs[0]
-    elif len(certs) > 1:
-        out["x509_chain"] = certs
+
+def _warn_for_chain(metas: List[Dict[str, Any]]) -> List[dict]:
+    out: List[dict] = []
+    for m in metas:
+        out.extend(cert_warnings(m))
     return out
+
+
+def _summarize_loaded(data: bytes, key, cert, chain) -> Dict[str, Any]:
+    base: Dict[str, Any] = {"format": "PKCS12", "size": len(data), "digest_sha256": _sha256(data)}
+    out: Dict[str, Any] = {**base, "encrypted": False, "has_key": key is not None}
+    metas = _cert_metas(cert, chain)
+    if not metas:
+        return out
+    if len(metas) == 1:
+        out["x509"] = metas[0]
+    else:
+        out["x509_chain"] = metas
+    warns = _warn_for_chain(metas)
+    if warns:
+        out["warnings"] = warns
+    return out
+
+
+def summarize(data: bytes) -> Dict[str, Any]:
+    try:
+        key, cert, chain = _load(data, None)
+    except Exception:
+        return {"format": "PKCS12", "size": len(data), "digest_sha256": _sha256(data), "encrypted": True}
+    return _summarize_loaded(data, key, cert, chain)
 
 
 def summarize_with_password_bytes(data: bytes, password: str) -> Dict[str, Any]:
-    base: Dict[str, Any] = {
-        "format": "PKCS12",
-        "size": len(data),
-        "digest_sha256": _sha256_hex(data),
-    }
+    base: Dict[str, Any] = {"format": "PKCS12", "size": len(data), "digest_sha256": _sha256(data)}
     try:
-        key, cert, chain = load_key_and_certificates(data, password=password.encode("utf-8"))
+        key, cert, chain = _load(data, password)
     except Exception:
         return {**base, "encrypted": True, "error": "BadPasswordError"}
-
-    out: Dict[str, Any] = {**base, "encrypted": False, "has_key": key is not None}
-
-    certs: List[Dict[str, Any]] = []
-    if cert is not None:
-        certs.append(x509_cert_to_meta(cert))
-    if chain:
-        certs.extend(x509_cert_to_meta(c) for c in chain)
-
-    if len(certs) == 1:
-        out["x509"] = certs[0]
-    elif len(certs) > 1:
-        out["x509_chain"] = certs
-    return out
+    return _summarize_loaded(data, key, cert, chain)

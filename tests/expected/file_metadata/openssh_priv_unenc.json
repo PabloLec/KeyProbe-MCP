@@ -1,4 +1,16 @@
 {
   "format": "OPENSSH",
-  "private": { "encrypted": false }
+  "private": {
+    "cipher": "none",
+    "encrypted": false,
+    "kdf": "none",
+    "public_fingerprint_sha256": "SHA256:NVEasLMqQ69AlbI2UxPSFQ8neIYJy70oDP5ii1Ji2rU"
+  },
+  "warnings": [
+    {
+      "code": "OPENSSH_UNENCRYPTED_KEY",
+      "message": "OpenSSH private key is unencrypted",
+      "severity": "warn"
+    }
+  ]
 }

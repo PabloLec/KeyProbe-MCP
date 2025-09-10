@@ -1,5 +1,10 @@
 {
-  "format": "PKCS8",
   "encrypted": false,
-  "key": { "type": "RSA", "size": 2048 }
+  "format": "PKCS8",
+  "key": {
+    "fingerprint_spki_sha256": "3488f4a3d9b4720f49f81746b101e811a9c5cb4a9dba79bf9da98dd4d8c19ac9",
+    "public_exponent": 65537,
+    "size": 2048,
+    "type": "RSA"
+  }
 }

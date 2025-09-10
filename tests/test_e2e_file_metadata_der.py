@@ -9,5 +9,5 @@ async def test_file_metadata_der_leaf_snapshot():
     p = require(FIX / "der" / "leaf.cert.der")
     from keyprobe.server import mcp
     async with Client(mcp) as client:
-        res = await client.call_tool("file_metadata", {"path": str(p)})
+        res = await client.call_tool("analyze_from_local_path", {"path": str(p)})
         assert_snapshot(res.data, EXP / "file_metadata" / "der_leaf.json")

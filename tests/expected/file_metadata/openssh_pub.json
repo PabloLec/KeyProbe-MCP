@@ -1,4 +1,7 @@
 {
   "format": "OPENSSH",
-  "public": { "type": "ssh-ed25519" }
+  "public": {
+    "fingerprint_sha256": "SHA256:NVEasLMqQ69AlbI2UxPSFQ8neIYJy70oDP5ii1Ji2rU",
+    "type": "ssh-ed25519"
+  }
 }

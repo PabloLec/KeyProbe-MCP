@@ -1,9 +1,69 @@
 {
-  "format": "PKCS12",
   "encrypted": false,
+  "format": "PKCS12",
   "has_key": true,
+  "warnings": [
+    {
+      "code": "CA_MISSING_KU",
+      "message": "CA certificate without keyCertSign",
+      "severity": "warn"
+    }
+  ],
   "x509_chain": [
-    { "subject_cn": "KeyProbe Test Root" },
-    { "subject_cn": "leaf.example.com" }
+    {
+      "authority_information_access": null,
+      "authority_key_identifier": "d6d047c0bc25cbe558d5e64a7daa03d1b947bafd",
+      "basic_constraints": {
+        "ca": true,
+        "path_len": null
+      },
+      "crl_distribution_points": [],
+      "eku": [],
+      "fingerprint_sha256": "7a097225bfa7cf0690982c65e643c7675fd24ad709e59a0fc9706066adb83fd6",
+      "issuer_cn": "KeyProbe Test Root",
+      "issuer_dn": "C=FR,O=KeyProbe Test,CN=KeyProbe Test Root",
+      "key_usage": [],
+      "public_key": {
+        "size": 2048,
+        "type": "RSA"
+      },
+      "san": [],
+      "signature_hash": "sha256",
+      "subject_cn": "KeyProbe Test Root",
+      "subject_dn": "C=FR,O=KeyProbe Test,CN=KeyProbe Test Root",
+      "subject_key_identifier": "d6d047c0bc25cbe558d5e64a7daa03d1b947bafd"
+    },
+    {
+      "authority_information_access": null,
+      "authority_key_identifier": "d6d047c0bc25cbe558d5e64a7daa03d1b947bafd",
+      "basic_constraints": {
+        "ca": false,
+        "path_len": null
+      },
+      "crl_distribution_points": [],
+      "eku": [
+        "clientAuth",
+        "serverAuth"
+      ],
+      "fingerprint_sha256": "5b83b51fc8c2761850706c4622697b8562492c84ffd79621392d165298d88fb5",
+      "issuer_cn": "KeyProbe Test Root",
+      "issuer_dn": "C=FR,O=KeyProbe Test,CN=KeyProbe Test Root",
+      "key_usage": [
+        "digitalSignature",
+        "keyEncipherment"
+      ],
+      "public_key": {
+        "size": 2048,
+        "type": "RSA"
+      },
+      "san": [
+        "127.0.0.1",
+        "leaf.example.com"
+      ],
+      "signature_hash": "sha256",
+      "subject_cn": "leaf.example.com",
+      "subject_dn": "C=FR,O=KeyProbe Test,CN=leaf.example.com",
+      "subject_key_identifier": "3d06a06419b690c8c2c243c95ed6065c40de94f8"
+    }
   ]
 }
