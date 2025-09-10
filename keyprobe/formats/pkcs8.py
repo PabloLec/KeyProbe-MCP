@@ -1,17 +1,14 @@
-from typing import Dict, Any, Optional, List
 import base64
 import hashlib
+from typing import Any, Dict, List, Optional
 
-from cryptography.hazmat.primitives.asymmetric import rsa, ec, ed25519, ed448
-from cryptography.hazmat.primitives.serialization import (
-    load_pem_private_key,
-    load_der_private_key,
-    load_pem_public_key,
-    load_der_public_key,
-    Encoding,
-    PublicFormat,
-)
-
+from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, rsa
+from cryptography.hazmat.primitives.serialization import (Encoding,
+                                                          PublicFormat,
+                                                          load_der_private_key,
+                                                          load_der_public_key,
+                                                          load_pem_private_key,
+                                                          load_pem_public_key)
 from pyasn1.codec.der import decoder as der_decoder
 from pyasn1_modules import rfc5208, rfc8018
 
@@ -25,7 +22,11 @@ def _key_meta(key) -> Dict[str, Any]:
     if isinstance(key, (rsa.RSAPrivateKey, rsa.RSAPublicKey)):
         meta: Dict[str, Any] = {"type": "RSA", "size": key.key_size}
         try:
-            nums = key.public_key().public_numbers() if hasattr(key, "public_key") else key.public_numbers()
+            nums = (
+                key.public_key().public_numbers()
+                if hasattr(key, "public_key")
+                else key.public_numbers()
+            )
             meta["public_exponent"] = getattr(nums, "e", None)
         except Exception:
             pass
@@ -86,25 +87,43 @@ def _parse_epki_params(der: bytes) -> Optional[Dict[str, Any]]:
     except Exception:
         return None
 
-    algo_oid = ".".join(str(x) for x in epki["encryptionAlgorithm"]["algorithm"].asTuple())
+    algo_oid = ".".join(
+        str(x) for x in epki["encryptionAlgorithm"]["algorithm"].asTuple()
+    )
     info: Dict[str, Any] = {"algorithm_oid": algo_oid}
 
     if algo_oid == _PBES2_OID:
         try:
-            params, _ = der_decoder.decode(epki["encryptionAlgorithm"]["parameters"], asn1Spec=rfc8018.PBES2_params())
+            params, _ = der_decoder.decode(
+                epki["encryptionAlgorithm"]["parameters"],
+                asn1Spec=rfc8018.PBES2_params(),
+            )
             kdf = params["keyDerivationFunc"]
             kdf_oid = ".".join(str(x) for x in kdf["algorithm"].asTuple())
             kdf_info: Dict[str, Any] = {"oid": kdf_oid}
             if kdf_oid == _PBKDF2_OID:
-                pbkdf2, _ = der_decoder.decode(kdf["parameters"], asn1Spec=rfc8018.PBKDF2_params())
-                salt = bytes(pbkdf2["salt"]["specified"]) if pbkdf2["salt"].getName() == "specified" else b""
+                pbkdf2, _ = der_decoder.decode(
+                    kdf["parameters"], asn1Spec=rfc8018.PBKDF2_params()
+                )
+                salt = (
+                    bytes(pbkdf2["salt"]["specified"])
+                    if pbkdf2["salt"].getName() == "specified"
+                    else b""
+                )
                 iters = int(pbkdf2["iterationCount"])
                 prf_oid = "1.2.840.113549.2.7"
                 if pbkdf2["prf"].isValue:
-                    prf_oid = ".".join(str(x) for x in pbkdf2["prf"]["algorithm"].asTuple())
+                    prf_oid = ".".join(
+                        str(x) for x in pbkdf2["prf"]["algorithm"].asTuple()
+                    )
                 kdf_info.update(
-                    {"name": "pbkdf2", "iterations": iters, "salt_b64": base64.b64encode(salt).decode("ascii"),
-                     "prf": _PRF_NAMES.get(prf_oid, prf_oid), "prf_oid": prf_oid}
+                    {
+                        "name": "pbkdf2",
+                        "iterations": iters,
+                        "salt_b64": base64.b64encode(salt).decode("ascii"),
+                        "prf": _PRF_NAMES.get(prf_oid, prf_oid),
+                        "prf_oid": prf_oid,
+                    }
                 )
             enc = params["encryptionScheme"]
             enc_oid = ".".join(str(x) for x in enc["algorithm"].asTuple())
@@ -130,19 +149,39 @@ def _encryption_warnings(info: Dict[str, Any]) -> List[dict]:
     warns: List[dict] = []
     alg = (info.get("algorithm") or "").lower()
     if "pbe" in alg and "pbes2" not in alg:
-        warns.append({"code": "PKCS8_PBES1_WEAK", "message": "PKCS#5 v1 (PBES1) is outdated", "severity": "warn"})
+        warns.append(
+            {
+                "code": "PKCS8_PBES1_WEAK",
+                "message": "PKCS#5 v1 (PBES1) is outdated",
+                "severity": "warn",
+            }
+        )
     cipher = (info.get("cipher", {}).get("name") or "").lower()
     if cipher in {"des-ede3-cbc"}:
-        warns.append({"code": "PKCS8_3DES", "message": "3DES in use", "severity": "warn"})
+        warns.append(
+            {"code": "PKCS8_3DES", "message": "3DES in use", "severity": "warn"}
+        )
     kdf = info.get("kdf") or {}
     if kdf.get("name") == "pbkdf2":
         try:
             iters = int(kdf.get("iterations", 0))
             if iters and iters < 100_000:
-                warns.append({"code": "PKCS8_PBKDF2_LOW_ITER", "message": f"PBKDF2 iterations={iters} look low", "severity": "warn"})
+                warns.append(
+                    {
+                        "code": "PKCS8_PBKDF2_LOW_ITER",
+                        "message": f"PBKDF2 iterations={iters} look low",
+                        "severity": "warn",
+                    }
+                )
             prf = (kdf.get("prf") or "").lower()
             if prf in {"hmacwithsha1", "sha1"}:
-                warns.append({"code": "PKCS8_PBKDF2_SHA1", "message": "PBKDF2 PRF is HMAC-SHA1", "severity": "warn"})
+                warns.append(
+                    {
+                        "code": "PKCS8_PBKDF2_SHA1",
+                        "message": "PBKDF2 PRF is HMAC-SHA1",
+                        "severity": "warn",
+                    }
+                )
         except Exception:
             pass
     return warns
@@ -170,7 +209,13 @@ def _summarize_private(key) -> Dict[str, Any]:
     if meta.get("type") == "RSA":
         try:
             if int(meta.get("size", 0)) < 2048:
-                out["warnings"] = [{"code": "RSA_WEAK_KEY", "message": "RSA key size < 2048", "severity": "warn"}]
+                out["warnings"] = [
+                    {
+                        "code": "RSA_WEAK_KEY",
+                        "message": "RSA key size < 2048",
+                        "severity": "warn",
+                    }
+                ]
         except Exception:
             pass
     return out
@@ -181,7 +226,11 @@ def _try_private_pem(data: bytes) -> Optional[Dict[str, Any]]:
         return _summarize_private(load_pem_private_key(data, password=None))
     except TypeError:
         det = _analyze_encrypted(data)
-        return {"format": "PKCS8", **det} if det else {"format": "PKCS8", "encrypted": True}
+        return (
+            {"format": "PKCS8", **det}
+            if det
+            else {"format": "PKCS8", "encrypted": True}
+        )
     except ValueError:
         return None
 
@@ -191,7 +240,11 @@ def _try_private_der(data: bytes) -> Optional[Dict[str, Any]]:
         return _summarize_private(load_der_private_key(data, password=None))
     except TypeError:
         det = _analyze_encrypted(data)
-        return {"format": "PKCS8", **det} if det else {"format": "PKCS8", "encrypted": True}
+        return (
+            {"format": "PKCS8", **det}
+            if det
+            else {"format": "PKCS8", "encrypted": True}
+        )
     except ValueError:
         return None
 

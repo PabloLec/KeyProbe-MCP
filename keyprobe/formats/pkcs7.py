@@ -1,10 +1,8 @@
 import warnings
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 from cryptography.hazmat.primitives.serialization.pkcs7 import (
-    load_pem_pkcs7_certificates,
-    load_der_pkcs7_certificates,
-)
+    load_der_pkcs7_certificates, load_pem_pkcs7_certificates)
 
 from ..x509meta import cert_to_meta, cert_warnings
 

@@ -1,15 +1,14 @@
-from typing import Dict, Any, Optional, Callable, List
+from typing import Any, Callable, Dict, List, Optional
 
-from .format_identify import guess_format
 from .common import sha256_hex
-
-from .formats import pem as fmt_pem
+from .format_identify import guess_format
 from .formats import der as fmt_der
-from .formats import pkcs7 as fmt_pkcs7
-from .formats import pkcs12 as fmt_pkcs12
-from .formats import pkcs8 as fmt_pkcs8
-from .formats import openssh as fmt_openssh
 from .formats import jks as fmt_jks
+from .formats import openssh as fmt_openssh
+from .formats import pem as fmt_pem
+from .formats import pkcs7 as fmt_pkcs7
+from .formats import pkcs8 as fmt_pkcs8
+from .formats import pkcs12 as fmt_pkcs12
 
 
 def _merge_warnings(dest: Dict[str, Any], *srcs: Dict[str, Any]) -> None:
@@ -33,7 +32,10 @@ def _merge_warnings(dest: Dict[str, Any], *srcs: Dict[str, Any]) -> None:
 
 Handler = Callable[[bytes, Optional[str], Optional[str]], Dict[str, Any]]
 
-def _handle_pem(data: bytes, _password: Optional[str], _filename: Optional[str]) -> Dict[str, Any]:
+
+def _handle_pem(
+    data: bytes, _password: Optional[str], _filename: Optional[str]
+) -> Dict[str, Any]:
     res = fmt_pem.summarize(data)
 
     has_cert_or_csr = any(k in res for k in ("x509", "x509_chain", "csr"))
@@ -45,18 +47,24 @@ def _handle_pem(data: bytes, _password: Optional[str], _filename: Optional[str])
     return res
 
 
-def _handle_der(data: bytes, _password: Optional[str], _filename: Optional[str]) -> Dict[str, Any]:
+def _handle_der(
+    data: bytes, _password: Optional[str], _filename: Optional[str]
+) -> Dict[str, Any]:
     res7 = fmt_pkcs7.summarize(data)
     if "x509_chain" in res7:
         return {"format": "PKCS7", **res7}
     return fmt_der.summarize(data)
 
 
-def _handle_pkcs7(data: bytes, _password: Optional[str], _filename: Optional[str]) -> Dict[str, Any]:
+def _handle_pkcs7(
+    data: bytes, _password: Optional[str], _filename: Optional[str]
+) -> Dict[str, Any]:
     return fmt_pkcs7.summarize(data)
 
 
-def _handle_pkcs12(data: bytes, password: Optional[str], _filename: Optional[str]) -> Dict[str, Any]:
+def _handle_pkcs12(
+    data: bytes, password: Optional[str], _filename: Optional[str]
+) -> Dict[str, Any]:
     return (
         fmt_pkcs12.summarize_with_password_bytes(data, password)
         if password
@@ -64,15 +72,21 @@ def _handle_pkcs12(data: bytes, password: Optional[str], _filename: Optional[str
     )
 
 
-def _handle_pkcs8(data: bytes, _password: Optional[str], _filename: Optional[str]) -> Dict[str, Any]:
+def _handle_pkcs8(
+    data: bytes, _password: Optional[str], _filename: Optional[str]
+) -> Dict[str, Any]:
     return fmt_pkcs8.summarize(data)
 
 
-def _handle_openssh(data: bytes, _password: Optional[str], _filename: Optional[str]) -> Dict[str, Any]:
+def _handle_openssh(
+    data: bytes, _password: Optional[str], _filename: Optional[str]
+) -> Dict[str, Any]:
     return fmt_openssh.summarize(data)
 
 
-def _handle_jks(data: bytes, password: Optional[str], _filename: Optional[str]) -> Dict[str, Any]:
+def _handle_jks(
+    data: bytes, password: Optional[str], _filename: Optional[str]
+) -> Dict[str, Any]:
     return (
         fmt_jks.summarize_with_password_bytes(data, password)
         if password
@@ -90,13 +104,18 @@ _HANDLERS: Dict[str, Handler] = {
     "JKS": _handle_jks,
 }
 
+
 def summarize_bytes(
     data: bytes,
     filename: Optional[str] = None,
     password: Optional[str] = None,
 ) -> Dict[str, Any]:
     fmt = guess_format(data, filename=filename)
-    base: Dict[str, Any] = {"format": fmt, "size": len(data), "digest_sha256": sha256_hex(data)}
+    base: Dict[str, Any] = {
+        "format": fmt,
+        "size": len(data),
+        "digest_sha256": sha256_hex(data),
+    }
 
     handler = _HANDLERS.get(fmt)
     if not handler:

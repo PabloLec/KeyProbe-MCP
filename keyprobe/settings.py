@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass, field
 
+
 @dataclass(frozen=True)
 class Settings:
     LOG_LEVEL: str = field(default="INFO")

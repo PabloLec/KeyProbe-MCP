@@ -3,14 +3,18 @@ import uuid
 from dataclasses import dataclass
 from typing import Callable, Dict, Optional
 
+
 @dataclass
 class ResourceEntry:
     created_at: float
     summary: dict
     tmp_path: Optional[str] = None
 
+
 class ResourceStore:
-    def __init__(self, ttl_seconds: int, now_fn: Callable[[], float] | None = None) -> None:
+    def __init__(
+        self, ttl_seconds: int, now_fn: Callable[[], float] | None = None
+    ) -> None:
         self._ttl = ttl_seconds
         self._now = now_fn or time.monotonic
         self._by_id: Dict[str, ResourceEntry] = {}
@@ -26,7 +30,9 @@ class ResourceStore:
 
     def put(self, summary: dict, tmp_path: Optional[str] = None) -> str:
         rid = str(uuid.uuid4())
-        self._by_id[rid] = ResourceEntry(created_at=self._now(), summary=summary, tmp_path=tmp_path)
+        self._by_id[rid] = ResourceEntry(
+            created_at=self._now(), summary=summary, tmp_path=tmp_path
+        )
         return rid
 
     def get(self, rid: str) -> ResourceEntry:
@@ -37,11 +43,13 @@ class ResourceStore:
 
     def clear(self) -> None:
         self._by_id.clear()
+
     def count(self) -> int:
         return len(self._by_id)
 
     def set_ttl(self, ttl_seconds: int) -> None:
         self._ttl = ttl_seconds
+
     def get_ttl(self) -> int:
         return self._ttl
 

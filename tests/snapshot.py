@@ -1,7 +1,7 @@
-from pathlib import Path
-from typing import Any, Dict, List
 import json
 import re
+from pathlib import Path
+from typing import Any, Dict, List
 
 VOLATILE_TOP = {"path", "filename", "resolved", "input", "size", "digest_sha256"}
 
@@ -30,7 +30,9 @@ def _sort_entries(entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def _sort_chain(chain: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    return sorted(chain, key=lambda c: (c.get("subject_cn", ""), c.get("issuer_cn", "")))
+    return sorted(
+        chain, key=lambda c: (c.get("subject_cn", ""), c.get("issuer_cn", ""))
+    )
 
 
 def _drop_keys(d: Dict[str, Any], keys: set[str]) -> Dict[str, Any]:
@@ -96,7 +98,9 @@ def _presence_invariants(actual: Dict[str, Any]) -> None:
             assert isinstance(v, str) and v.strip(), f"{k} must be a non-empty string"
 
     if "size" in actual:
-        assert isinstance(actual["size"], int) and actual["size"] >= 0, "size must be a non-negative int"
+        assert (
+            isinstance(actual["size"], int) and actual["size"] >= 0
+        ), "size must be a non-negative int"
 
     if "digest_sha256" in actual:
         v = str(actual["digest_sha256"])
@@ -104,11 +108,14 @@ def _presence_invariants(actual: Dict[str, Any]) -> None:
 
     fmt = actual.get("format")
     if fmt == "PKCS8":
-        assert ("key" in actual and isinstance(actual["key"], dict)) or (actual.get("encrypted") is True), \
-            "PKCS8 must include key details or encrypted=true"
+        assert ("key" in actual and isinstance(actual["key"], dict)) or (
+            actual.get("encrypted") is True
+        ), "PKCS8 must include key details or encrypted=true"
 
     if fmt == "OPENSSH":
-        assert ("public" in actual) or ("private" in actual), "OPENSSH must include public or private section"
+        assert ("public" in actual) or (
+            "private" in actual
+        ), "OPENSSH must include public or private section"
 
     x = actual.get("x509")
     if isinstance(x, dict):

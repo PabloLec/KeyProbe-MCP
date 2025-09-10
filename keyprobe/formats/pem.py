@@ -1,17 +1,13 @@
-from typing import Dict, Any, List
-import hashlib
+from typing import Any, Dict, List
 
 from cryptography import x509
-from cryptography.hazmat.primitives.asymmetric import rsa, ec, ed25519, ed448
-from cryptography.hazmat.primitives.serialization import (
-    load_pem_private_key,
-    load_pem_public_key,
-    Encoding,
-    PublicFormat,
-)
+from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, rsa
+from cryptography.hazmat.primitives.serialization import (Encoding,
+                                                          PublicFormat,
+                                                          load_pem_private_key,
+                                                          load_pem_public_key)
 
-from ..x509meta import cert_to_meta, csr_to_meta, cert_warnings
-
+from ..x509meta import cert_to_meta, cert_warnings, csr_to_meta
 
 BEGIN_CERT = b"-----BEGIN CERTIFICATE-----"
 END_CERT = b"-----END CERTIFICATE-----"
@@ -50,6 +46,7 @@ def _blocks(data: bytes, begin: bytes, end: bytes) -> List[bytes]:
 def _spki_sha256(pub) -> str:
     spki = pub.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
     import hashlib as _h
+
     return _h.sha256(spki).hexdigest()
 
 

@@ -1,4 +1,3 @@
-
 import base64
 import hashlib
 from typing import Optional
@@ -6,9 +5,9 @@ from typing import Optional
 from fastmcp import FastMCP
 
 from .logging_conf import setup_logging
+from .path_utils import resolve_path
 from .resource_store import ResourceStore
 from .settings import Settings
-from .path_utils import resolve_path
 from .summary import summarize_bytes
 
 mcp = FastMCP(name="KeyProbe")
@@ -36,7 +35,9 @@ def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def _analyze_from_bytes(name_key: str, name_val: str, data: bytes, password: Optional[str]) -> dict:
+def _analyze_from_bytes(
+    name_key: str, name_val: str, data: bytes, password: Optional[str]
+) -> dict:
     meta = summarize_bytes(data, filename=name_val, password=password)
     meta.setdefault("size", len(data))
     meta.setdefault("digest_sha256", _sha256(data))
@@ -46,8 +47,8 @@ def _analyze_from_bytes(name_key: str, name_val: str, data: bytes, password: Opt
 @mcp.tool
 def analyze_from_local_path(path: str, password: Optional[str] = None) -> dict:
     """
-    Analyse un fichier (PKCS#12, JKS, PEM, DER, PKCS#8, PKCS#7, OpenSSH, etc.)
-    et retourne un résumé détaillé. 'password' est optionnel (utile pour .p12/.jks).
+    Analyze a file (PKCS#12, JKS, PEM, DER, PKCS#8, PKCS#7, OpenSSH, etc.)
+    and return a detailed summary. 'password' is optional (useful for .p12/.jks).
     """
     p = resolve_path(path)
     data = p.read_bytes()
@@ -55,9 +56,11 @@ def analyze_from_local_path(path: str, password: Optional[str] = None) -> dict:
 
 
 @mcp.tool
-def analyze_from_b64_string(filename: str, content_b64: str, password: Optional[str] = None) -> dict:
+def analyze_from_b64_string(
+    filename: str, content_b64: str, password: Optional[str] = None
+) -> dict:
     """
-    Variante base64 de 'analyze'.
+    Base64 variant of 'analyze'.
     """
     data = base64.b64decode(content_b64, validate=True)
     return _analyze_from_bytes("filename", filename, data, password)

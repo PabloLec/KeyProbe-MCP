@@ -1,7 +1,8 @@
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, Optional
+
 from cryptography import x509
 
-from ..x509meta import cert_to_meta, csr_to_meta, cert_warnings
+from ..x509meta import cert_to_meta, cert_warnings, csr_to_meta
 
 
 def _try_cert(data: bytes) -> Optional[Dict[str, Any]]:
