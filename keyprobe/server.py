@@ -4,31 +4,10 @@ from typing import Optional
 
 from fastmcp import FastMCP
 
-from .logging_conf import setup_logging
 from .path_utils import resolve_path
-from .resource_store import ResourceStore
-from .settings import Settings
 from .summary import summarize_bytes
 
 mcp = FastMCP(name="KeyProbe")
-
-_SETTINGS: Optional[Settings] = None
-_STORE: Optional[ResourceStore] = None
-
-
-def _settings() -> Settings:
-    global _SETTINGS
-    if _SETTINGS is None:
-        _SETTINGS = Settings.from_env()
-        setup_logging(_SETTINGS)
-    return _SETTINGS
-
-
-def _store() -> ResourceStore:
-    global _STORE
-    if _STORE is None:
-        _STORE = ResourceStore(ttl_seconds=_settings().RESOURCE_TTL_SEC)
-    return _STORE
 
 
 def _sha256(data: bytes) -> str:
@@ -64,17 +43,6 @@ def analyze_from_b64_string(
     """
     data = base64.b64decode(content_b64, validate=True)
     return _analyze_from_bytes("filename", filename, data, password)
-
-
-@mcp.tool
-def put_temp(summary: dict) -> str:
-    rid = _store().put(summary)
-    return f"kp://temp/{rid}"
-
-
-@mcp.resource("kp://temp/{rid}", mime_type="application/json")
-def get_temp(rid: str) -> dict:
-    return _store().get(rid).summary
 
 
 @mcp.resource("kp://fs/{path*}", mime_type="application/json")
