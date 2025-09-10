@@ -4,32 +4,27 @@ set -euo pipefail
 OUT_DIR="${1:-tests/fixtures}"
 umask 077
 
-# Dépendances (Ubuntu/Debian) :
-#   sudo apt-get update && sudo apt-get install -y openssl openjdk-17-jre-headless openssh-client
-
-# Passwords de test
 P12_PASS="changeit"
 JKS_PASS="changeit"
 PKCS8_PASS="secret"
 SSH_PASS="secret"
 
-# Dossiers
+# Create output directories
 mkdir -p "$OUT_DIR"/{pem,der,pkcs7,pkcs12,pkcs8,openssh,jks,misc}
 
-# --- 1) CA racine + Leaf (RSA) ----------------------------------------------------
-# Root (auto-signé)
+# Generate a self-signed root CA (RSA)
 openssl req -x509 -newkey rsa:2048 -sha256 -days 730 -nodes \
   -subj "/CN=KeyProbe Test Root/O=KeyProbe Test/C=FR" \
   -keyout "$OUT_DIR/pem/root.key.pem" \
   -out "$OUT_DIR/pem/root.cert.pem"
 
-# Leaf CSR
+# Generate leaf key and CSR (RSA)
 openssl req -newkey rsa:2048 -nodes -sha256 \
   -subj "/CN=leaf.example.com/O=KeyProbe Test/C=FR" \
   -keyout "$OUT_DIR/pem/leaf.key.pem" \
   -out "$OUT_DIR/pem/leaf.csr.pem"
 
-# SAN config temporaire
+# Temporary SAN configuration for the leaf certificate
 SAN_CFG="$(mktemp)"
 cat >"$SAN_CFG" <<EOF
 basicConstraints=CA:FALSE
@@ -38,31 +33,30 @@ keyUsage=digitalSignature,keyEncipherment
 extendedKeyUsage=serverAuth,clientAuth
 EOF
 
-# Signer le leaf avec la racine
+# Sign the leaf CSR with the root CA
 openssl x509 -req -in "$OUT_DIR/pem/leaf.csr.pem" \
   -CA "$OUT_DIR/pem/root.cert.pem" -CAkey "$OUT_DIR/pem/root.key.pem" -CAcreateserial \
   -out "$OUT_DIR/pem/leaf.cert.pem" -days 365 -sha256 -extfile "$SAN_CFG"
 
 rm -f "$SAN_CFG" "$OUT_DIR/pem/root.cert.srl" || true
 
-# Chaîne PEM (leaf + root)
+# Build a PEM chain (leaf + root)
 cat "$OUT_DIR/pem/leaf.cert.pem" "$OUT_DIR/pem/root.cert.pem" > "$OUT_DIR/pem/chain.pem"
 
-# --- 2) DER -----------------------------------------------------------------------
+# Export the leaf certificate as DER
 openssl x509 -in "$OUT_DIR/pem/leaf.cert.pem" -outform DER -out "$OUT_DIR/der/leaf.cert.der"
 
-# --- 3) PKCS#7 (P7B) --------------------------------------------------------------
-# DER
+# Create PKCS#7 chains
+# DER output
 openssl crl2pkcs7 -nocrl \
   -certfile "$OUT_DIR/pem/leaf.cert.pem" -certfile "$OUT_DIR/pem/root.cert.pem" \
   -out "$OUT_DIR/pkcs7/chain.p7b" -outform DER
-
-# PEM
+# PEM output
 openssl crl2pkcs7 -nocrl \
   -certfile "$OUT_DIR/pem/chain.pem" \
   -out "$OUT_DIR/pkcs7/chain.pem.p7b"
 
-# --- 4) PKCS#12 -------------------------------------------------------------------
+# Create a PKCS#12 keystore (leaf key + cert + root)
 openssl pkcs12 -export -name "leaf" \
   -inkey "$OUT_DIR/pem/leaf.key.pem" \
   -in "$OUT_DIR/pem/leaf.cert.pem" \
@@ -70,24 +64,24 @@ openssl pkcs12 -export -name "leaf" \
   -out "$OUT_DIR/pkcs12/keystore.p12" \
   -passout pass:"$P12_PASS"
 
-# --- 5) PKCS#8 (privé non chiffré / chiffré + public) -----------------------------
+# PKCS#8 outputs
+# Private key (unencrypted)
 openssl pkcs8 -topk8 -in "$OUT_DIR/pem/leaf.key.pem" -nocrypt \
   -out "$OUT_DIR/pkcs8/key_pkcs8_unenc.pem"
-
+# Private key (encrypted)
 openssl pkcs8 -topk8 -in "$OUT_DIR/pem/leaf.key.pem" \
   -passout pass:"$PKCS8_PASS" \
   -out "$OUT_DIR/pkcs8/key_pkcs8_encrypted.pem"
-
-# Public (PKCS#8)
+# Public key (SPKI, PKCS#8)
 openssl pkey -in "$OUT_DIR/pem/leaf.key.pem" -pubout -out "$OUT_DIR/pkcs8/pubkey_pkcs8.pem"
 
-# --- 6) OpenSSH (ed25519) ---------------------------------------------------------
-# Non chiffré
+# Generate OpenSSH Ed25519 keys
+# Unencrypted
 ssh-keygen -t ed25519 -f "$OUT_DIR/openssh/id_ed25519" -N "" -C "keyprobe@test" >/dev/null
-# Chiffré
+# Encrypted
 ssh-keygen -t ed25519 -f "$OUT_DIR/openssh/id_ed25519_enc" -N "$SSH_PASS" -C "keyprobe@test" >/dev/null
 
-# --- 7) JKS -----------------------------------------------------------------------
+# Create a JKS keystore and import the root certificate
 keytool -genkeypair -alias leaf \
   -keyalg RSA -keysize 2048 -validity 365 \
   -dname "CN=leaf.example.com, O=KeyProbe Test, C=FR" \
@@ -101,7 +95,7 @@ keytool -importcert -alias root \
   -storetype JKS \
   -storepass "$JKS_PASS" -noprompt >/dev/null
 
-# --- 8) UNKNOWN / divers ----------------------------------------------------------
+# Misc: unknown/opaque sample
 printf 'hello-keyprobe\n' > "$OUT_DIR/misc/unknown.bin"
 
 echo "Fixtures generated under: $OUT_DIR"

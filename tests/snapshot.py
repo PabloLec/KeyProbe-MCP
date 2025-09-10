@@ -1,13 +1,10 @@
-# tests/snapshot.py  (ou tests/integration/snapshot.py)
 from pathlib import Path
 from typing import Any, Dict, List
 import json
 import re
 
-# Volatile au top niveau uniquement (chemins, taille, digest)
 VOLATILE_TOP = {"path", "filename", "resolved", "input", "size", "digest_sha256"}
 
-# Volatile dans les métadonnées X.509 (dépend du moment de génération)
 VOLATILE_X509 = {
     "not_before",
     "not_after",
@@ -130,11 +127,9 @@ def assert_snapshot(actual: Dict[str, Any], expected_path: Path) -> None:
     expected = load_expected(expected_path)
     norm = _normalize(actual)
 
-    # Comparaison stricte: l'expected doit être un snapshot complet (hors champs volatils supprimés)
     assert norm == expected, (
         f"\n--- expected: {expected_path}\n"
         f"--- actual(norm):\n{json.dumps(norm, indent=2, ensure_ascii=False)}\n"
     )
 
-    # Invariants de présence sur l'objet brut
     _presence_invariants(actual)
