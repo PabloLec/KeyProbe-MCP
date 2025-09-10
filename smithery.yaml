@@ -4,3 +4,28 @@ startCommand:
 build:
   dockerfile: "Dockerfile"
   dockerBuildPath: "."
+
+name: keyprobe-mcp
+version: 0.1.0
+description: >
+  KeyProbe analyzes certificate/keystore files (PEM, DER, PKCS#12, JKS/JCEKS/BKS,
+  PKCS#7, PKCS#8, OpenSSH) and returns structured JSON metadata. Read-only, no secrets logged.
+
+registry:
+  displayName: "KeyProbe"
+  shortDescription: "Analyze certs & keystores and return JSON metadata."
+  longDescription: |
+    KeyProbe is a FastMCP server that detects, parses, and summarizes certificate/keystore
+    formats. It extracts subjects/issuers, validity dates, key/signature algorithms, SANs,
+    usages, entry counts, size, and SHA-256 digests. Read-only and idempotent; no private
+    key material is returned.
+  tags:
+    - security
+    - x509
+    - certificates
+    - cryptography
+    - fastmcp
+  category: "Security"
+  homepage: "https://github.com/PabloLec/KeyProbe-MCP"
+  repository: "https://github.com/PabloLec/KeyProbe-MCP"
+  documentation: "https://github.com/PabloLec/KeyProbe-MCP"
