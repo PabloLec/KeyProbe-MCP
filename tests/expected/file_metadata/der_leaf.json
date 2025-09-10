@@ -1,0 +1,12 @@
+{
+  "format": "DER",
+  "x509": {
+    "subject_cn": "leaf.example.com",
+    "issuer_cn": "KeyProbe Test Root",
+    "public_key": { "type": "RSA", "size": 2048 },
+    "eku": ["clientAuth", "serverAuth"],
+    "key_usage": ["digitalSignature", "keyEncipherment"],
+    "san": ["127.0.0.1", "leaf.example.com"],
+    "signature_hash": "sha256"
+  }
+}

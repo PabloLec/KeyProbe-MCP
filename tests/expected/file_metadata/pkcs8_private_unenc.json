@@ -1,0 +1,5 @@
+{
+  "format": "PKCS8",
+  "encrypted": false,
+  "key": { "type": "RSA", "size": 2048 }
+}

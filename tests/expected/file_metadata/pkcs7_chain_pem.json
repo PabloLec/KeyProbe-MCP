@@ -1,0 +1,7 @@
+{
+  "format": "PKCS7",
+  "x509_chain": [
+    { "subject_cn": "KeyProbe Test Root" },
+    { "subject_cn": "leaf.example.com" }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "format": "PKCS12",
+  "encrypted": true,
+  "error": "BadPasswordError"
+}

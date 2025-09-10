@@ -1,0 +1,4 @@
+{
+  "format": "OPENSSH",
+  "public": { "type": "ssh-ed25519" }
+}

@@ -1,0 +1,6 @@
+{
+  "format": "JKS",
+  "encrypted": true,
+  "magic": "feedfeed",
+  "error": "KeystoreSignatureError"
+}
