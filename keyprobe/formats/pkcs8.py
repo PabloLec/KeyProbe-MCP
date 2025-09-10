@@ -1,14 +1,15 @@
-# keyprobe/formats/pkcs8.py
 from __future__ import annotations
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 from cryptography.hazmat.primitives.serialization import (
     load_pem_private_key,
     load_der_private_key,
     load_pem_public_key,
     load_der_public_key,
+    Encoding, PublicFormat,
 )
 from cryptography.hazmat.primitives.asymmetric import rsa, ec, ed25519, ed448
+import hashlib
 
 def _key_meta_from_obj(key) -> Dict[str, Any]:
     if isinstance(key, rsa.RSAPrivateKey) or isinstance(key, rsa.RSAPublicKey):
@@ -21,42 +22,67 @@ def _key_meta_from_obj(key) -> Dict[str, Any]:
         return {"type": "Ed448"}
     return {"type": key.__class__.__name__}
 
+def _spki_fingerprint_sha256_from_public(pub) -> str:
+    spki = pub.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
+    return hashlib.sha256(spki).hexdigest()
+
 def summarize(data: bytes) -> Dict[str, Any]:
     out: Dict[str, Any] = {"format": "PKCS8"}
-    # privé PEM
+
+    # Private PEM
     try:
         k = load_pem_private_key(data, password=None)
         out["key"] = _key_meta_from_obj(k)
         out["encrypted"] = False
-        return out
-    except TypeError:
-        out["encrypted"] = True  # indique généralement "password required"
-        return out
-    except ValueError:
-        pass
-    # privé DER
-    try:
-        k = load_der_private_key(data, password=None)
-        out["key"] = _key_meta_from_obj(k)
-        out["encrypted"] = False
+        try:
+            out["key"]["fingerprint_spki_sha256"] = _spki_fingerprint_sha256_from_public(k.public_key())
+        except Exception:
+            pass
         return out
     except TypeError:
         out["encrypted"] = True
         return out
     except ValueError:
         pass
-    # public PEM
+
+    # Private DER
+    try:
+        k = load_der_private_key(data, password=None)
+        out["key"] = _key_meta_from_obj(k)
+        out["encrypted"] = False
+        try:
+            out["key"]["fingerprint_spki_sha256"] = _spki_fingerprint_sha256_from_public(k.public_key())
+        except Exception:
+            pass
+        return out
+    except TypeError:
+        out["encrypted"] = True
+        return out
+    except ValueError:
+        pass
+
+    # Public PEM
     try:
         k = load_pem_public_key(data)
         out["key"] = _key_meta_from_obj(k)
+        try:
+            out["key"]["fingerprint_spki_sha256"] = _spki_fingerprint_sha256_from_public(k)
+        except Exception:
+            pass
         return out
     except Exception:
         pass
-    # public DER
+
+    # Public DER
     try:
         k = load_der_public_key(data)
         out["key"] = _key_meta_from_obj(k)
+        try:
+            out["key"]["fingerprint_spki_sha256"] = _spki_fingerprint_sha256_from_public(k)
+        except Exception:
+            pass
         return out
     except Exception:
         pass
+
     return out

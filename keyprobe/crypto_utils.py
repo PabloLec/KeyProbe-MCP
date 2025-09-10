@@ -157,3 +157,78 @@ def _sig_hash_name(cert: x509.Certificate) -> Optional[str]:
     except Exception:
         return None
     return algo.name if isinstance(algo, hashes.HashAlgorithm) else None
+
+# --- CSR support ------------------------------------------------------------------
+from typing import cast
+from cryptography.hazmat.primitives.asymmetric import rsa, ec, ed25519, ed448
+
+def _public_key_info_from_obj(pk) -> Dict[str, Any]:
+    if isinstance(pk, rsa.RSAPublicKey):
+        return {"type": "RSA", "size": pk.key_size}
+    if isinstance(pk, ec.EllipticCurvePublicKey):
+        return {"type": "EC", "curve": getattr(pk.curve, "name", "EC")}
+    if isinstance(pk, ed25519.Ed25519PublicKey):
+        return {"type": "Ed25519"}
+    if isinstance(pk, ed448.Ed448PublicKey):
+        return {"type": "Ed448"}
+    return {"type": pk.__class__.__name__}
+
+def _csr_san_list(csr: x509.CertificateSigningRequest) -> List[str]:
+    try:
+        ext = csr.extensions.get_extension_for_oid(x509.oid.ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+        san = cast(x509.SubjectAlternativeName, ext.value)
+    except x509.ExtensionNotFound:
+        return []
+    out: List[str] = []
+    for g in san:
+        if isinstance(g, x509.DNSName):
+            out.append(g.value)
+        elif isinstance(g, x509.IPAddress):
+            out.append(str(g.value))
+    return out
+
+def _csr_key_usage(csr: x509.CertificateSigningRequest) -> List[str]:
+    try:
+        ext = csr.extensions.get_extension_for_oid(x509.oid.ExtensionOID.KEY_USAGE)
+        ku = cast(x509.KeyUsage, ext.value)
+    except x509.ExtensionNotFound:
+        return []
+    names: List[str] = []
+    if ku.digital_signature: names.append("digitalSignature")
+    if ku.content_commitment: names.append("contentCommitment")
+    if ku.key_encipherment: names.append("keyEncipherment")
+    if ku.data_encipherment: names.append("dataEncipherment")
+    if ku.key_agreement:
+        names.append("keyAgreement")
+        if ku.encipher_only: names.append("encipherOnly")
+        if ku.decipher_only: names.append("decipherOnly")
+    if ku.key_cert_sign: names.append("keyCertSign")
+    if ku.crl_sign: names.append("cRLSign")
+    return names
+
+def _csr_eku_list(csr: x509.CertificateSigningRequest) -> List[str]:
+    try:
+        ext = csr.extensions.get_extension_for_oid(x509.oid.ExtensionOID.EXTENDED_KEY_USAGE)
+        eku = cast(x509.ExtendedKeyUsage, ext.value)
+    except x509.ExtensionNotFound:
+        return []
+    def _eku_name(oid: x509.ObjectIdentifier) -> str:
+        if oid == EKUOID.SERVER_AUTH: return "serverAuth"
+        if oid == EKUOID.CLIENT_AUTH: return "clientAuth"
+        if oid == EKUOID.CODE_SIGNING: return "codeSigning"
+        if oid == EKUOID.EMAIL_PROTECTION: return "emailProtection"
+        if oid == EKUOID.TIME_STAMPING: return "timeStamping"
+        if oid == EKUOID.OCSP_SIGNING: return "OCSPSigning"
+        return oid.dotted_string
+    return [_eku_name(oid) for oid in eku]
+
+def x509_csr_to_meta(csr: x509.CertificateSigningRequest) -> Dict[str, Any]:
+    pk = csr.public_key()
+    return {
+        "subject_dn": _rfc4514(csr.subject),
+        "subject_cn": _name_to_cn(csr.subject),
+        "public_key": _public_key_info_from_obj(pk),
+        "san": _csr_san_list(csr),
+        "key_usage": _csr_key_usage(csr),
+        "eku": _csr_eku_list(csr),
+    }

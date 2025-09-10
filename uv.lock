@@ -414,6 +414,9 @@ dependencies = [
     { name = "certifi" },
     { name = "cryptography" },
     { name = "fastmcp" },
+    { name = "javaobj-py3" },
+    { name = "pyasn1" },
+    { name = "pyasn1-modules" },
     { name = "pydantic" },
     { name = "pyjks" },
 ]
@@ -432,6 +435,9 @@ requires-dist = [
     { name = "certifi", specifier = ">=2025.8.3" },
     { name = "cryptography", specifier = ">=45.0.7" },
     { name = "fastmcp", specifier = ">=2.12.2" },
+    { name = "javaobj-py3", specifier = ">=0.4.4" },
+    { name = "pyasn1", specifier = ">=0.6.1" },
+    { name = "pyasn1-modules", specifier = ">=0.4.2" },
     { name = "pydantic", specifier = ">=2.11.7" },
     { name = "pyjks", specifier = ">=20.0.0" },
 ]
