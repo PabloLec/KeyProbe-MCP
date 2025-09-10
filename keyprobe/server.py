@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import os
 from pathlib import Path
 from typing import Annotated, Optional
 
@@ -241,4 +242,8 @@ def explain_summary_json(
 
 
 if __name__ == "__main__":
-    mcp.run()
+    port = os.getenv("PORT")
+    if port:
+        mcp.run(transport="http", host="0.0.0.0", port=int(port))
+    else:
+        mcp.run()
